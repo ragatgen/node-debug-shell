@@ -2,27 +2,34 @@
 
 set -euo pipefail
 
-# Plugin binary name
 PLUGIN_NAME="kubectl-aks-node-debug"
+VERSION="0.1.0"
+DEBUG_IMAGE="mcr.microsoft.com/cbl-mariner/busybox:2.0"
 
 show_help() {
-    echo "Usage: kubectl aks-node-debug"
+    echo "Usage: kubectl aks node debug"
     echo
     echo "Starts an interactive node-level debug session in an Azure Kubernetes Service (AKS) cluster."
     echo
     echo "Prerequisites:"
     echo "  - kubectl must be installed and configured."
+    echo "  - Azure CLI must be installed and authenticated."
     echo "  - You must be connected to an AKS cluster."
     echo "  - The cluster must support 'kubectl debug'."
-    echo "  - Your user must have permissions to create debug pods."
+    echo "  - Your user must have permissions to list nodes and create debug pods."
     echo
     echo "Example:"
-    echo "  kubectl aks-node-debug"
+    echo "  kubectl aks node debug"
     exit 0
 }
 
 if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
     show_help
+fi
+
+if [[ "${1:-}" == "--version" || "${1:-}" == "version" ]]; then
+    echo "${PLUGIN_NAME} ${VERSION}"
+    exit 0
 fi
 
 if ! command -v kubectl >/dev/null 2>&1; then
@@ -105,7 +112,7 @@ echo
 
 kubectl debug "node/$NODE_NAME" \
     -it \
-    --image=mcr.microsoft.com/cbl-mariner/busybox:2.0 \
+    --image="${DEBUG_IMAGE}" \
     -- chroot /host
 
 echo

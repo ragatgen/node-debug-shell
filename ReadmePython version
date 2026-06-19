@@ -1,0 +1,118 @@
+# aks-node-debug Python code 
+
+A Python-based `kubectl` plugin that simplifies node-level troubleshooting in Azure Kubernetes Service (AKS).
+
+The plugin lists the available AKS nodes, lets you select one interactively, and starts a debug session using `kubectl debug`.
+
+## Features
+
+* Lists available AKS nodes
+* Provides interactive node selection
+* Starts a `kubectl debug` session on the selected node
+* Uses an AKS-compatible debug image
+* Runs as a standard `kubectl` plugin
+
+## Prerequisites
+
+* Python 3
+* `kubectl`
+* Azure CLI
+* Access to an AKS cluster
+* Current Kubernetes context configured for AKS
+* Permissions to list nodes and create debug pods
+
+## Local Installation
+
+Clone the repository:
+
+```bash
+git clone https://github.com/ragatgen/kubectl-aks-node-debug.git
+cd kubectl-aks-node-debug
+```
+
+Make the plugin executable:
+
+```bash
+chmod +x kubectl-aks-node-debug
+```
+
+Create a local plugin directory:
+
+```bash
+mkdir -p ~/bin
+mv kubectl-aks-node-debug ~/bin/
+export PATH="$HOME/bin:$PATH"
+```
+
+Verify that `kubectl` detects the plugin:
+
+```bash
+kubectl plugin list
+```
+
+Expected output:
+
+```text
+/home/<user>/bin/kubectl-aks-node-debug
+```
+
+## Usage
+
+Depending on your local `kubectl` plugin resolution, run:
+
+```bash
+kubectl aks node debug
+```
+
+You can also run the plugin directly:
+
+```bash
+~/bin/kubectl-aks-node-debug
+```
+
+## Example
+
+```text
+Available nodes in your AKS cluster:
+
+1) aks-default-99999999-vmss000000
+2) aks-default-99999999-vmss000001
+3) aks-default-99999999-vmss000002
+
+Choose one node by number: 2
+
+You selected: aks-default-99999999-vmss000001
+Starting debug session on node: aks-default-99999999-vmss000001
+
+root@aks-default-99999999:/#
+```
+
+## Help
+
+```bash
+kubectl aks node debug --help
+```
+
+or:
+
+```bash
+~/bin/kubectl-aks-node-debug --help
+```
+
+## Notes
+
+For Krew distribution, the intended plugin name is:
+
+```text
+aks-node-debug
+```
+
+The repository and executable use the standard kubectl plugin binary format:
+
+```text
+kubectl-aks-node-debug
+```
+
+## License
+
+MIT License

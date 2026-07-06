@@ -81,19 +81,19 @@ Expected output:
 Start an interactive node debug session:
 
 ```bash
-kubectl node-debug-shell
+kubectl-node-debug-shell
 ```
 
 Display help:
 
 ```bash
-kubectl node-debug-shell --help
+kubectl-node-debug-shell --help
 ```
 
 Display the installed version:
 
 ```bash
-kubectl node-debug-shell --version
+kubectl-node-debug-shell --version
 ```
 
 ---

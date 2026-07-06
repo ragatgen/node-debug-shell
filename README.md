@@ -35,7 +35,7 @@ The plugin automatically discovers cluster nodes, allows you to select a node in
 ### Manual Installation
 
 
-git clone https://github.com/ragatgen/kubectl-node-debug-shell.git
+git clone https://github.com/ragatgen/node-debug-shell
 
 cd kubectl-node-debug-shell
 

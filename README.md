@@ -49,7 +49,7 @@ cd node-debug-shell
 Make the plugin executable:
 
 ```bash
-chmod +x kubectl-node-debug
+chmod +x kubectl-node-debug-shell
 ```
 
 Install the plugin:

@@ -55,7 +55,7 @@ chmod +x kubectl-node-debug
 Install the plugin:
 
 ```bash
-sudo install -m 755 kubectl-node-debug /usr/local/bin/
+sudo install -m 755 kubectl-node-debug-shell /usr/local/bin/
 ```
 
 ---

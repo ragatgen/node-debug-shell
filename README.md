@@ -2,20 +2,19 @@
 
 A `kubectl` plugin that simplifies node-level troubleshooting by launching an interactive debug shell on Kubernetes nodes.
 
-The plugin automatically discovers cluster nodes, allows you to select a node interactively, lets you choose a debug image, and starts a `kubectl debug` session on the selected node.
+The plugin automatically discovers cluster nodes, allows you to select a node interactively, lets you choose a debug image, and launches a `kubectl debug` session on the selected node.
 
 ## Features
 
-* Lists available cluster nodes interactively
-* Allows node selection from a menu
-* Provides multiple debug image options:
+* Interactive node selection
+* Multiple debug image options:
 
   * **Wolfi** – Secure default image
   * **Netshoot** – Network diagnostics
   * **Azure Linux BusyBox** – Minimal image optimized for AKS
-  * **Custom Image** – Any image available in your cluster
+  * **Custom Image** – Any container image available in your cluster
 * Creates a debug pod on the selected node
-* Starts an interactive shell on the host using `chroot /host`
+* Opens an interactive shell directly on the node using `chroot /host`
 * Simplifies the standard `kubectl debug node/<node-name>` workflow
 * Works with any Kubernetes cluster that supports `kubectl debug`
 
@@ -25,7 +24,7 @@ The plugin automatically discovers cluster nodes, allows you to select a node in
 
 * Kubernetes cluster with node debugging enabled
 * `kubectl` installed and configured
-* A valid Kubernetes context selected
+* A valid Kubernetes context
 * RBAC permissions to:
 
   * List nodes
@@ -42,7 +41,11 @@ Clone the repository:
 
 ```bash
 git clone https://github.com/ragatgen/node-debug-shell.git
+```
 
+Enter the project directory:
+
+```bash
 cd node-debug-shell
 ```
 
@@ -78,7 +81,9 @@ Expected output:
 
 # Usage
 
-Start an interactive node debug session:
+## Manual Installation
+
+When installed manually, execute the plugin directly:
 
 ```bash
 kubectl-node-debug-shell
@@ -90,10 +95,26 @@ Display help:
 kubectl-node-debug-shell --help
 ```
 
-Display the installed version:
+Display the version:
 
 ```bash
 kubectl-node-debug-shell --version
+```
+
+---
+
+## Krew Installation
+
+When installed through **Krew**, the plugin is available as:
+
+```bash
+kubectl node-debug-shell
+```
+
+Depending on your local `kubectl` plugin resolution, it may also be invoked as:
+
+```bash
+kubectl node debug shell
 ```
 
 ---
@@ -144,21 +165,27 @@ root@worker-02:/#
 
 ## Wolfi (Default)
 
-```text
+```
 cgr.dev/chainguard/wolfi-base
 ```
 
-A secure, minimal image maintained by Chainguard. Recommended for general-purpose node troubleshooting.
+A secure, minimal image maintained by Chainguard.
+
+Recommended for:
+
+* General node troubleshooting
+* Security-conscious environments
+* Host inspection
 
 ---
 
 ## Netshoot
 
-```text
+```
 nicolaka/netshoot
 ```
 
-Ideal for networking diagnostics.
+Designed for advanced networking diagnostics.
 
 Includes tools such as:
 
@@ -177,21 +204,21 @@ Includes tools such as:
 
 ## Azure Linux BusyBox
 
-```text
+```
 mcr.microsoft.com/cbl-mariner/busybox:2.0
 ```
 
-A lightweight Microsoft-maintained image that works well on Azure Kubernetes Service (AKS).
+A lightweight Microsoft-maintained image optimized for Azure Kubernetes Service (AKS).
 
 ---
 
 ## Custom Image
 
-Specify any container image that is accessible from your cluster.
+Use any container image that is accessible from your Kubernetes cluster.
 
 Examples:
 
-```text
+```
 ubuntu:24.04
 busybox:latest
 myregistry.example.com/debug-tools:latest
@@ -217,7 +244,7 @@ The plugin:
 
 # Supported Kubernetes Platforms
 
-This plugin is Kubernetes-generic and works with any cluster that supports `kubectl debug`, including:
+This plugin works with any Kubernetes cluster that supports `kubectl debug`, including:
 
 * Azure Kubernetes Service (AKS)
 * Amazon Elastic Kubernetes Service (EKS)
@@ -244,7 +271,13 @@ This plugin is Kubernetes-generic and works with any cluster that supports `kube
 
 # Version
 
-Display the installed version:
+For manual installations:
+
+```bash
+kubectl-node-debug-shell --version
+```
+
+For Krew installations:
 
 ```bash
 kubectl node-debug-shell --version

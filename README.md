@@ -1,4 +1,4 @@
-# kubectl-node-debug-shell
+# node-debug-shell
 
 A `kubectl` plugin that simplifies node-level troubleshooting by launching an interactive debug shell on Kubernetes nodes.
 
@@ -10,59 +10,103 @@ The plugin automatically discovers cluster nodes, allows you to select a node in
 * Allows node selection from a menu
 * Provides multiple debug image options:
 
-  * Wolfi — secure default
-  * Netshoot — network diagnostics
-  * Azure Linux BusyBox — AKS-friendly minimal image
-  * Custom image
+  * **Wolfi** – Secure default image
+  * **Netshoot** – Network diagnostics
+  * **Azure Linux BusyBox** – Minimal image optimized for AKS
+  * **Custom Image** – Any image available in your cluster
 * Creates a debug pod on the selected node
-* Opens a shell directly on the node for troubleshooting
+* Starts an interactive shell on the host using `chroot /host`
 * Simplifies the standard `kubectl debug node/<node-name>` workflow
-* Supports any Kubernetes cluster where `kubectl debug` is available
+* Works with any Kubernetes cluster that supports `kubectl debug`
 
-## Prerequisites
+---
+
+# Prerequisites
 
 * Kubernetes cluster with node debugging enabled
 * `kubectl` installed and configured
-* A current Kubernetes context selected
-* Sufficient RBAC permissions to:
+* A valid Kubernetes context selected
+* RBAC permissions to:
 
   * List nodes
   * Create debug pods
 * Kubernetes version that supports `kubectl debug`
 
-## Installation
+---
 
-### Manual Installation
+# Installation
 
+## Manual Installation
 
-git clone https://github.com/ragatgen/node-debug-shell
+Clone the repository:
 
-cd kubectl-node-debug-shell
+```bash
+git clone https://github.com/ragatgen/node-debug-shell.git
 
+cd node-debug-shell
+```
+
+Make the plugin executable:
+
+```bash
 chmod +x kubectl-node-debug-shell
+```
 
+Install the plugin:
+
+```bash
 sudo install -m 755 kubectl-node-debug-shell /usr/local/bin/
+```
 
-Verify Installation
+---
+
+## Verify Installation
+
+Run:
+
+```bash
 kubectl plugin list
+```
+
 Expected output:
+
+```text
 /usr/local/bin/kubectl-node-debug-shell
-Usage
-Launch the plugin:
+```
+
+---
+
+# Usage
+
+Start an interactive node debug session:
+
+```bash
 kubectl node-debug-shell
+```
+
 Display help:
+
+```bash
 kubectl node-debug-shell --help
-Display version:
+```
+
+Display the installed version:
+
+```bash
 kubectl node-debug-shell --version
-Example
+```
+
+---
+
+# Example
+
+```text
 ------------------------------------------------------
 kubectl-node-debug-shell 0.2.0
 Interactive Kubernetes Node Troubleshooting
 ------------------------------------------------------
 
-
 Using Kubernetes context: production
-
 
 Available cluster nodes:
 
@@ -74,18 +118,16 @@ Choose one node by number: 2
 
 Select debug image:
 
-1) Wolfi (secure default)
-2) Netshoot (network diagnostics)
+1) Wolfi (Secure default)
+2) Netshoot (Network diagnostics)
 3) Azure Linux BusyBox (AKS-friendly minimal image)
 4) Custom image
 
-
 Choose image [1]: 2
 
-
-Selected node:  worker-02
+Selected node: worker-02
 Selected image: Netshoot
-Image:          nicolaka/netshoot
+Image: nicolaka/netshoot
 
 Starting debug session...
 
@@ -93,78 +135,129 @@ Creating debugging pod node-debugger-worker-02-xxxxx with container debugger on 
 
 If you don't see a command prompt, try pressing Enter.
 
-
 root@worker-02:/#
-Debug Image Options
-Wolfi
+```
+
+---
+
+# Debug Images
+
+## Wolfi (Default)
+
+```text
 cgr.dev/chainguard/wolfi-base
-Recommended as the secure default image for general node inspection.
-Netshoot
+```
+
+A secure, minimal image maintained by Chainguard. Recommended for general-purpose node troubleshooting.
+
+---
+
+## Netshoot
+
+```text
 nicolaka/netshoot
-Recommended for networking diagnostics such as DNS, routing, TCP connectivity, packet capture, and socket inspection.
-Azure Linux BusyBox
+```
+
+Ideal for networking diagnostics.
+
+Includes tools such as:
+
+* tcpdump
+* dig
+* nslookup
+* curl
+* ping
+* traceroute
+* ss
+* ip
+* netcat
+* mtr
+
+---
+
+## Azure Linux BusyBox
+
+```text
 mcr.microsoft.com/cbl-mariner/busybox:2.0
-Recommended as a minimal AKS-friendly image for lightweight troubleshooting.
-Custom Image
-Allows you to provide any image available to your cluster, for example:
+```
+
+A lightweight Microsoft-maintained image that works well on Azure Kubernetes Service (AKS).
+
+---
+
+## Custom Image
+
+Specify any container image that is accessible from your cluster.
+
+Examples:
+
+```text
 ubuntu:24.04
+busybox:latest
 myregistry.example.com/debug-tools:latest
+```
 
+---
 
-## How It Works
+# How It Works
 
 The plugin:
 
-Verifies that kubectl is installed.
-Retrieves the current Kubernetes context.
-Validates permissions to list nodes and create pods.
-Checks that kubectl debug is available.
-Retrieves the list of cluster nodes.
-Presents an interactive node selection menu.
-Presents an interactive debug image selection menu.
-Executes a kubectl debug session against the selected node.
-Starts chroot /host inside the debug container for node-level investigation and troubleshooting.
+1. Verifies that `kubectl` is installed.
+2. Retrieves the current Kubernetes context.
+3. Verifies that `kubectl debug` is available.
+4. Validates permissions to list nodes and create debug pods.
+5. Retrieves the list of cluster nodes.
+6. Prompts you to select a node.
+7. Prompts you to select a debug image.
+8. Starts a `kubectl debug` session using the selected image.
+9. Executes `chroot /host` to provide direct access to the node filesystem.
 
+---
 
-## Supported Environments
+# Supported Kubernetes Platforms
 
-This plugin is Kubernetes-generic and works with clusters that support kubectl debug, including:
+This plugin is Kubernetes-generic and works with any cluster that supports `kubectl debug`, including:
 
+* Azure Kubernetes Service (AKS)
+* Amazon Elastic Kubernetes Service (EKS)
+* Google Kubernetes Engine (GKE)
+* Red Hat OpenShift
+* Rancher Kubernetes
+* Self-managed Kubernetes clusters
+* Any CNCF-conformant Kubernetes distribution
 
-Azure Kubernetes Service (AKS)
-Amazon Elastic Kubernetes Service (EKS)
-Google Kubernetes Engine (GKE)
-Self-managed Kubernetes clusters
-Other Kubernetes distributions with node debugging enabled
+---
 
-## Common Use Cases
+# Common Use Cases
 
-Investigating node health issues
+* Node health investigations
+* Networking diagnostics
+* DNS troubleshooting
+* Storage troubleshooting
+* Host filesystem inspection
+* Incident response
+* Kubernetes node debugging
+* General infrastructure troubleshooting
 
-Troubleshooting networking problems
+---
 
-Inspecting the host filesystem
+# Version
 
-Verifying node configuration
+Display the installed version:
 
-Collecting diagnostics during incident response
-
-Analyzing node-level Kubernetes issues
-
-Launching network-focused diagnostics with Netshoot
-
-Using secure minimal debug environments with Wolfi
-
-## Version
-
-Display the installed plugin version:
-
+```bash
 kubectl node-debug-shell --version
+```
 
-## Example output:
+Example output:
+
+```text
 kubectl-node-debug-shell 0.2.0
+```
 
+---
 
-License
+# License
+
 MIT License
-

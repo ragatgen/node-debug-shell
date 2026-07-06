@@ -1,116 +1,201 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -euo pipefail
 
-PLUGIN_NAME="kubectl-aks-node-debug"
-VERSION="0.1.1"
-DEBUG_IMAGE="mcr.microsoft.com/cbl-mariner/busybox:2.0"
+PLUGIN_NAME="kubectl-node-debug-shell"
+VERSION="0.2.0"
+
+IMAGE_WOLFI="cgr.dev/chainguard/wolfi-base"
+IMAGE_NETSHOOT="nicolaka/netshoot"
+IMAGE_AZURE_BUSYBOX="mcr.microsoft.com/cbl-mariner/busybox:2.0"
 
 show_help() {
-    echo "Usage: kubectl aks node debug"
-    echo
-    echo "Starts an interactive node-level debug session in an Azure Kubernetes Service (AKS) cluster."
-    echo
-    echo "Prerequisites:"
-    echo "  - kubectl must be installed and configured."
-    echo "  - Azure CLI must be installed and authenticated."
-    echo "  - You must be connected to an AKS cluster."
-    echo "  - The cluster must support 'kubectl debug'."
-    echo "  - Your user must have permissions to list nodes and create debug pods."
-    echo
-    echo "Example:"
-    echo "  kubectl aks node debug"
-    exit 0
+    cat <<EOF
+Usage:
+  kubectl node-debug-shell
+
+Starts an interactive debug shell on a selected Kubernetes node.
+
+The plugin lists cluster nodes, lets you select one, then lets you choose
+a debug image before starting a kubectl debug session.
+
+Debug images:
+  1. Wolfi                 Secure default
+  2. Netshoot              Network diagnostics
+  3. Azure Linux BusyBox   AKS-friendly minimal image
+  4. Custom image
+
+Prerequisites:
+  - kubectl must be installed and configured.
+  - You must be connected to a Kubernetes cluster.
+  - The cluster must support 'kubectl debug'.
+  - Your user must have permissions to list nodes and create debug pods.
+
+Examples:
+  kubectl node-debug-shell
+  kubectl node-debug-shell --help
+  kubectl node-debug-shell --version
+EOF
 }
 
-if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
-    show_help
-fi
-
-if [[ "${1:-}" == "--version" || "${1:-}" == "version" ]]; then
+show_version() {
     echo "${PLUGIN_NAME} ${VERSION}"
-    exit 0
-fi
+}
 
-if ! command -v kubectl >/dev/null 2>&1; then
-    echo "Error: kubectl is not installed or not available in PATH."
+fail() {
+    echo "Error: $*" >&2
     exit 1
-fi
+}
 
-if ! command -v az >/dev/null 2>&1; then
-    echo "Error: Azure CLI is not installed or not available in PATH."
-    exit 1
-fi
+require_kubectl() {
+    command -v kubectl >/dev/null 2>&1 || \
+        fail "kubectl is not installed or not available in PATH."
+}
 
-if ! az account show >/dev/null 2>&1; then
-    echo "Error: You are not logged into Azure. Run 'az login' first."
-    exit 1
-fi
+require_context() {
+    KUBE_CONTEXT="$(kubectl config current-context 2>/dev/null || true)"
 
-AKS_CONTEXT=$(kubectl config current-context 2>/dev/null || true)
+    if [[ -z "$KUBE_CONTEXT" ]]; then
+        fail "No Kubernetes context is currently selected."
+    fi
+}
 
-if [[ -z "$AKS_CONTEXT" ]]; then
-    echo "Error: No Kubernetes context is currently selected."
-    echo "Run: az aks get-credentials --resource-group <resource-group> --name <cluster-name>"
-    exit 1
-fi
+require_permissions() {
+    kubectl auth can-i list nodes >/dev/null 2>&1 || \
+        fail "Your Kubernetes identity cannot list nodes."
 
-echo "Using Kubernetes context: $AKS_CONTEXT"
-echo
+    kubectl auth can-i create pods >/dev/null 2>&1 || \
+        fail "Your Kubernetes identity cannot create debug pods."
+}
 
-if ! kubectl auth can-i get nodes >/dev/null 2>&1; then
-    echo "Error: Your Kubernetes identity cannot list nodes."
-    exit 1
-fi
+require_debug_support() {
+    kubectl debug --help >/dev/null 2>&1 || \
+        fail "'kubectl debug' is not available in your kubectl client."
+}
 
-if ! kubectl auth can-i create pods >/dev/null 2>&1; then
-    echo "Error: Your Kubernetes identity cannot create debug pods."
-    exit 1
-fi
+print_header() {
+    echo "------------------------------------------------------"
+    echo "${PLUGIN_NAME} ${VERSION}"
+    echo "Interactive Kubernetes Node Troubleshooting"
+    echo "------------------------------------------------------"
+    echo
+    echo "Using Kubernetes context: ${KUBE_CONTEXT}"
+    echo
+}
 
-if ! kubectl debug --help >/dev/null 2>&1; then
-    echo "Error: 'kubectl debug' is not available in your kubectl client."
-    exit 1
-fi
+select_node() {
+    mapfile -t NODES < <(kubectl get nodes -o name | sed 's|node/||')
 
-mapfile -t nodes < <(kubectl get nodes -o name | sed 's|node/||')
+    if [[ "${#NODES[@]}" -eq 0 ]]; then
+        fail "No nodes found in the current cluster."
+    fi
 
-if [[ "${#nodes[@]}" -eq 0 ]]; then
-    echo "Error: No nodes found in the current cluster."
-    exit 1
-fi
+    echo "Available cluster nodes:"
+    echo
 
-echo "Available cluster nodes:"
-echo
+    for i in "${!NODES[@]}"; do
+        echo "$((i + 1))) ${NODES[$i]}"
+    done
 
-for i in "${!nodes[@]}"; do
-    echo "$((i + 1))) ${nodes[$i]}"
-done
+    echo
+    read -rp "Choose one node by number: " node_choice
 
-echo
-read -rp "Choose one node by number: " choice
+    if ! [[ "$node_choice" =~ ^[0-9]+$ ]]; then
+        fail "Invalid choice. Please enter a number."
+    fi
 
-if ! [[ "$choice" =~ ^[0-9]+$ ]]; then
-    echo "Invalid choice. Please enter a number."
-    exit 1
-fi
+    if (( node_choice < 1 || node_choice > ${#NODES[@]} )); then
+        fail "Invalid choice. Please select a number between 1 and ${#NODES[@]}."
+    fi
 
-if (( choice < 1 || choice > ${#nodes[@]} )); then
-    echo "Invalid choice. Please select a number between 1 and ${#nodes[@]}."
-    exit 1
-fi
+    NODE_NAME="${NODES[$((node_choice - 1))]}"
+}
 
-NODE_NAME="${nodes[$((choice - 1))]}"
+select_image() {
+    echo
+    echo "Select debug image:"
+    echo
+    echo "1) Wolfi (secure default)"
+    echo "2) Netshoot (network diagnostics)"
+    echo "3) Azure Linux BusyBox (AKS-friendly minimal image)"
+    echo "4) Custom image"
+    echo
 
-echo
-echo "You selected: $NODE_NAME"
-echo "Starting debug session on node: $NODE_NAME"
-echo
+    read -rp "Choose image [1]: " image_choice
+    image_choice="${image_choice:-1}"
 
-kubectl debug "node/$NODE_NAME" \
-    -it \
-    --image="${DEBUG_IMAGE}" \
-    -- chroot /host
+    case "$image_choice" in
+        1)
+            DEBUG_IMAGE="$IMAGE_WOLFI"
+            IMAGE_LABEL="Wolfi"
+            ;;
+        2)
+            DEBUG_IMAGE="$IMAGE_NETSHOOT"
+            IMAGE_LABEL="Netshoot"
+            ;;
+        3)
+            DEBUG_IMAGE="$IMAGE_AZURE_BUSYBOX"
+            IMAGE_LABEL="Azure Linux BusyBox"
+            ;;
+        4)
+            read -rp "Enter custom image: " custom_image
 
-echo
-echo "Exited debug session for node: $NODE_NAME"
+            if [[ -z "$custom_image" ]]; then
+                fail "Custom image cannot be empty."
+            fi
+
+            DEBUG_IMAGE="$custom_image"
+            IMAGE_LABEL="Custom image"
+            ;;
+        *)
+            fail "Invalid image selection."
+            ;;
+    esac
+}
+
+start_debug_session() {
+    echo
+    echo "Selected node:  ${NODE_NAME}"
+    echo "Selected image: ${IMAGE_LABEL}"
+    echo "Image:          ${DEBUG_IMAGE}"
+    echo
+    echo "Starting debug session..."
+    echo
+
+    kubectl debug "node/${NODE_NAME}" \
+        -it \
+        --image="${DEBUG_IMAGE}" \
+        -- chroot /host
+
+    echo
+    echo "Exited debug session for node: ${NODE_NAME}"
+}
+
+main() {
+    case "${1:-}" in
+        -h|--help)
+            show_help
+            exit 0
+            ;;
+        --version|version)
+            show_version
+            exit 0
+            ;;
+        "")
+            ;;
+        *)
+            fail "Unknown option: $1. Use --help for usage."
+            ;;
+    esac
+
+    require_kubectl
+    require_context
+    print_header
+    require_permissions
+    require_debug_support
+    select_node
+    select_image
+    start_debug_session
+}
+
+main "$@"

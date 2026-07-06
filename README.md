@@ -34,7 +34,7 @@ The plugin automatically discovers cluster nodes, allows you to select a node in
 
 ### Manual Installation
 
-```bash
+
 git clone https://github.com/ragatgen/kubectl-node-debug-shell.git
 
 cd kubectl-node-debug-shell
@@ -59,11 +59,11 @@ Example
 kubectl-node-debug-shell 0.2.0
 Interactive Kubernetes Node Troubleshooting
 ------------------------------------------------------
-''''
+
 
 Using Kubernetes context: production
 
-'''bash
+
 Available cluster nodes:
 
 1) worker-01
@@ -78,22 +78,22 @@ Select debug image:
 2) Netshoot (network diagnostics)
 3) Azure Linux BusyBox (AKS-friendly minimal image)
 4) Custom image
-''''
+
 
 Choose image [1]: 2
 
-'''bash
+
 Selected node:  worker-02
 Selected image: Netshoot
 Image:          nicolaka/netshoot
 
 Starting debug session...
-'''
+
 Creating debugging pod node-debugger-worker-02-xxxxx with container debugger on node worker-02.
 
 If you don't see a command prompt, try pressing Enter.
 
-'''bash
+
 root@worker-02:/#
 Debug Image Options
 Wolfi
@@ -109,7 +109,7 @@ Custom Image
 Allows you to provide any image available to your cluster, for example:
 ubuntu:24.04
 myregistry.example.com/debug-tools:latest
-'''
+
 
 ## How It Works
 
@@ -130,13 +130,13 @@ Starts chroot /host inside the debug container for node-level investigation and 
 
 This plugin is Kubernetes-generic and works with clusters that support kubectl debug, including:
 
-'''bash
+
 Azure Kubernetes Service (AKS)
 Amazon Elastic Kubernetes Service (EKS)
 Google Kubernetes Engine (GKE)
 Self-managed Kubernetes clusters
 Other Kubernetes distributions with node debugging enabled
-''''
+
 ## Common Use Cases
 
 Investigating node health issues
@@ -158,12 +158,12 @@ Using secure minimal debug environments with Wolfi
 ## Version
 
 Display the installed plugin version:
-'''bash
+
 kubectl node-debug-shell --version
 
 ## Example output:
 kubectl-node-debug-shell 0.2.0
-''''
+
 
 License
 MIT License
